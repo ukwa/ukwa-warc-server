@@ -36,10 +36,10 @@ def get_byte_range():
 
     # First check for explicit parameters (WebHDFS-API offset=<LONG>[&length=<LONG>])
     if request.args.get('offset', None):
-        offset = long(request.args.get('offset'))
+        offset = int(request.args.get('offset'))
         length = request.args.get('length', None)
         if length:
-            length = long(length)
+            length = int(length)
 
     # Check for Range header:
     range_header = request.headers.get('Range', None)
