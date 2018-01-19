@@ -15,6 +15,7 @@ def hello_world():
 def warc_by_filename(warc_filename):
     # Work out the range:
     offset, length = get_byte_range()
+    app.logger.info("Looking for range %i-%i of %s..." % (offset, length, warc_filename))
     # Look up the file:
     path_to_file = find_file(warc_filename)
     if path_to_file:
