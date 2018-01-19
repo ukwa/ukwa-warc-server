@@ -34,16 +34,18 @@ def get_byte_range():
     offset = None
     length = None
 
+    # Get any range header:
+    range_header = request.headers.get('Range', None)
+
     # First check for explicit parameters (WebHDFS-API offset=<LONG>[&length=<LONG>])
     if request.args.get('offset', None):
         offset = int(request.args.get('offset'))
         length = request.args.get('length', None)
-        if length:
+        if length is not None:
             length = int(length)
 
-    # Check for Range header:
-    range_header = request.headers.get('Range', None)
-    if range_header:
+    # Otherwise, check for Range header:
+    elif range_header:
         m = re.search('(\d+)-(\d*)', range_header)
         g = m.groups()
         if g[0]: offset = int(g[0])
@@ -78,7 +80,11 @@ def send_file_partial(path, offset, length):
                 yield data
                 to_send -= len(data)
 
+    # Fix up the size:
     size = os.path.getsize(path)
+    if length is None:
+        length = size - offset
+
     rv = Response(generate(),
                   206,
                   mimetype="application/octet-stream",
