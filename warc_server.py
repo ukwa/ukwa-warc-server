@@ -11,7 +11,7 @@ def hello_world():
     return 'Hello, World!\n'
 
 
-@app.route('/by-filename/<warc_filename>')
+@app.route('/by-filename/<path:warc_filename>')
 def warc_by_filename(warc_filename):
     # Work out the range:
     offset, length = get_byte_range()
