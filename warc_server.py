@@ -89,7 +89,7 @@ def send_file_partial(path, offset, length):
 
     # Generate a suitable response:
     rv = Response(generate(),
-                  200,
+                  200, # Should be 206 when appropriate!
                   mimetype="application/octet-stream",
                   direct_passthrough=True)
     #Do this only when it's a proper range request? Not a WebHDFS mapped request?
