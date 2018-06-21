@@ -61,6 +61,7 @@ def get_byte_range():
 
     return offset, length
 
+
 def send_file_partial(path, offset, length):
     """ 
         Simple wrapper around send_file which handles HTTP 206 Partial Content
@@ -86,12 +87,13 @@ def send_file_partial(path, offset, length):
     if length is None:
         length = size - offset
 
-    # FIXME This should return a 206 if the original request was a proper byte range one (rather than a WebHDFS style one)
+    # Generate a suitable response:
     rv = Response(generate(),
                   200,
                   mimetype="application/octet-stream",
                   direct_passthrough=True)
-    rv.headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(offset, offset + length - 1, size))
+    #Do this only when it's a proper range request? Not a WebHDFS mapped request?
+    #rv.headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(offset, offset + length - 1, size))
 
     return rv
 
