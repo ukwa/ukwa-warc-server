@@ -86,8 +86,9 @@ def send_file_partial(path, offset, length):
     if length is None:
         length = size - offset
 
+    # FIXME This should return a 206 if the original request was a proper byte range one (rather than a WebHDFS style one)
     rv = Response(generate(),
-                  206,
+                  200,
                   mimetype="application/octet-stream",
                   direct_passthrough=True)
     rv.headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(offset, offset + length - 1, size))
