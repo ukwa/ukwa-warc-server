@@ -24,6 +24,12 @@ def warc_by_filename(warc_filename):
         return abort(404)
 
 
+@app.route('/webhdfs/v1/by-filename/<path:warc_filename>')
+def warc_webhdfs_by_filename(warc_filename):
+    """Just a handy alias..."""
+    return warc_by_filename(warc_filename)
+
+
 def get_byte_range():
     """
     Determines the byte range for this request, either via parameters or HTTP Range requests.
