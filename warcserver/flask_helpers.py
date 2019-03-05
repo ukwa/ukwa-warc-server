@@ -79,6 +79,9 @@ def send_file_partial(path, offset, length):
 
 
 def find_file(filename):
+    # Strip off any leading path info:
+    filename = os.path.basename(filename)
+
     # To allow us to check for 'open' files:
     filename_open = "%s.open" % filename
 
