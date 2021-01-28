@@ -89,7 +89,7 @@ def find_file(filename):
     filename_open = "%s.open" % filename
 
     # Look
-    for tryf in [filename_open, filename]:
+    for tryf in [filename, filename_open]:
         if tryf in known_files:
             return known_files[tryf]
 

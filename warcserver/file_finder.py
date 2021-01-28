@@ -39,6 +39,11 @@ def update_from_filesystem():
                         for filename in filenames:
                             known_files[filename] = os.path.join(root, filename)
                             count += 1
+                # Cope if files get renamed from .open:
+                for filename in  known_files:
+                    filename_open = "%s.open" % filename
+                    if filename_open in known_files:
+                        known_files.pop(filename_open, None)
             logger.info("Scanning filesystem found %i files." % count)
         except Exception as e:
             logger.error("Exception when scanning for file(s): %s" % e)
