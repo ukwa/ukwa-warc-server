@@ -1,11 +1,32 @@
 import io
+import logging
 from flask import Flask, Response, request, stream_with_context, send_file, abort, url_for
+from flask.logging import default_handler
 from warcserver.cdx import lookup_in_cdx
 from warcserver.flask_helpers import *
+from warcserver.file_finder import start_looking
 from warcio.archiveiterator import ArcWarcRecordLoader, DecompressingBufferedReader
 
+# Setup app
 app = Flask(__name__)
 
+# Integrate with gunicorn logging if present:
+if "gunicorn" in os.environ.get("SERVER_SOFTWARE", ""):
+    gunicorn_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers = gunicorn_logger.handlers
+    app.logger.setLevel(gunicorn_logger.level)
+
+# Integrate root and module logging with Flask:
+root = logging.getLogger()
+root.addHandler(default_handler)
+root.setLevel(app.logger.level)
+
+# Start looking for files:
+start_looking()
+
+#
+# The app routes
+#
 
 @app.route('/')
 def hello_world():
@@ -20,7 +41,10 @@ def warc_by_filename(warc_filename):
     # Look up the file:
     path_to_file = find_file(warc_filename)
     if path_to_file:
-        return send_file_partial(path_to_file, offset, length)
+        if path_to_file.startswith('hdfs:'):
+            return from_webhdfs(path_to_file[5:], offset, length)
+        else:
+            return send_file_partial(path_to_file, offset, length)
     else:
         return abort(404)
 

@@ -1,0 +1,19 @@
+version: '2'
+
+services:
+
+  warcserver:
+    build:
+      context: .
+      args:
+        http_proxy: ${HTTP_PROXY}
+        https_proxy: ${HTTPS_PROXY}
+    environment:
+      - "FLASK_ENV=development" # DEBUG mode for development
+      - "WEBHDFS_PREFIX=http://hdfs.api.wa.bl.uk/webhdfs/v1"
+      - "WARC_PATHS=/test_warcs"
+    volumes:
+      - "./test_warcs:/test_warcs"
+    ports:
+     - "8008:8000"
+

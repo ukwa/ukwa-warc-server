@@ -2,6 +2,9 @@ import os
 import re
 import requests
 from flask import Response, request, stream_with_context, send_file
+from warcserver.file_finder import known_files
+
+WEBHDFS_PREFIX = os.environ.get('WEBHDFS_PREFIX', 'http://hdfs.api.wa.bl.uk/webhdfs/v1')
 
 
 def get_byte_range():
@@ -85,22 +88,35 @@ def find_file(filename):
     # To allow us to check for 'open' files:
     filename_open = "%s.open" % filename
 
-    # Places to look:
-    locations = os.environ.get('WARC_PATHS','.')
-    for location in locations.split(","):
-        for root, dirnames, filenames in os.walk(location):
-            if filename in filenames:
-                return os.path.join(root, filename)
-            if filename_open in filenames:
-                return os.path.join(root, filename_open)
+    # Look
+    for tryf in [filename_open, filename]:
+        if tryf in known_files:
+            return known_files[tryf]
 
     # No match:
     return None
 
 
-def from_webhdfs(url, offset, length):
-    req = requests.get(url, params={'offset': offset, 'length': length}, stream=True)
+def from_webhdfs(path, offset, length):
+    url = WEBHDFS_PREFIX + path
+    params={
+        'offset': offset,
+        'user.name': 'access',
+        'op': 'OPEN'
+        }
+    if length:
+        params['length'] = length
+    req = requests.get(url, params=params, stream=True)
     return Response(stream_with_context(req.iter_content(chunk_size=1024)), content_type=req.headers['content-type'])
 
 
+#    # Grab the payload from the WARC and return it.
+#    url = "%s%s?op=OPEN&user.name=%s&offset=%s" % (WEBHDFS_PREFIX, warc_filename, WEBHDFS_USER, warc_offset)
+#    if compressedendoffset and int(compressedendoffset) > 0:
+#        url = "%s&length=%s" % (url, compressedendoffset)
+#    r = requests.get(url, stream=True)
+#    # We handle decoding etc.
+#    r.raw.decode_content = False
+#    logger.debug("Loading from: %s" % r.url)
+#    logger.debug("Got status code %s" % r.status_code)
 
