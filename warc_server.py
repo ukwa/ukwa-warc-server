@@ -37,14 +37,14 @@ def hello_world():
 def warc_by_filename(warc_filename):
     # Work out the range:
     offset, length = get_byte_range()
-    app.logger.info("Looking for range %s-%s of %s..." % (offset, length, warc_filename))
+    app.logger.debug("Looking for range %s-%s of %s..." % (offset, length, warc_filename))
     # Look up the file:
     path_to_file = find_file(warc_filename)
     if path_to_file:
-        if path_to_file.startswith('hdfs:'):
-            return from_webhdfs(path_to_file[5:], offset, length)
+        if path_to_file['type'] == 'hdfs':
+            return from_webhdfs(path_to_file, offset, length)
         else:
-            return send_file_partial(path_to_file, offset, length)
+            return send_file_partial(path_to_file['file_path'], offset, length)
     else:
         return abort(404)
 

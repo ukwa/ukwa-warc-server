@@ -11,6 +11,8 @@ services:
     environment:
       - "FLASK_ENV=development" # DEBUG mode for development
       - "WEBHDFS_PREFIX=http://hdfs.api.wa.bl.uk/webhdfs/v1"
+      - "TRACKDB_URL=http://trackdb.dapi.wa.bl.uk/solr/tracking"
+      - "TRACKDB_FETCH_LIMIT=100"
       - "WARC_PATHS=/test_warcs"
     volumes:
       - "./test_warcs:/test_warcs"

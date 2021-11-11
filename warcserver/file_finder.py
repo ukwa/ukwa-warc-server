@@ -16,6 +16,7 @@ shared_lock = threading.Lock()
 # Where to look:
 WARC_PATHS = os.environ.get('WARC_PATHS','.')
 TRACKDB_URL = os.environ.get('TRACKDB_URL', 'http://solr8.api.wa.bl.uk/solr/tracking')
+TRACKDB_FETCH_LIMIT = os.environ.get('TRACKDB_FETCH_LIMIT', 1_000_000_000)
 
 #
 def start_looking():
@@ -37,14 +38,17 @@ def update_from_filesystem():
                 for location in WARC_PATHS.split(","):
                     for root, dirnames, filenames in os.walk(location):
                         for filename in filenames:
-                            known_files[filename] = os.path.join(root, filename)
+                            known_files[filename] = {
+                                'type': 'local',
+                                'file_path': os.path.join(root, filename)
+                            }
                             count += 1
                 # Cope if files get renamed from .open:
                 for filename in  known_files:
                     filename_open = "%s.open" % filename
                     if filename_open in known_files:
                         known_files.pop(filename_open, None)
-            logger.info("Scanning filesystem found %i files." % count)
+            logger.debug("Scanning filesystem found %i files." % count)
         except Exception as e:
             logger.error("Exception when scanning for file(s): %s" % e)
         # Sleep briefly before updating
@@ -57,16 +61,22 @@ def update_from_trackdb():
         r = None
         try:
             logger.debug("Pulling file list from TrackDB...")
-            limit = 100_000_000
+            limit = TRACKDB_FETCH_LIMIT
             url = TRACKDB_URL + '/select'
             params = { 
-                'fl': 'file_name_s,file_path_s',
-                'q': 'kind_s:warcs',
+                'fl': 'file_name_s,file_path_s,access_url_s',
+                'q': 'kind_s:warcs AND file_path_s:[* TO *]',
                 'rows': limit,
-                'sort': 'timestamp_dt desc',
+                # Add refresh timestamp, most recent last, to ensure we get the most recent copy even if moved clusters:
+                'sort': 'file_name_s desc, refresh_timestamp_dt asc', 
                 'wt': 'csv'
             }
             r = requests.get(url, params=params, stream=True)
+
+            if r.status_code != 200:
+                logger.error(f"Call to TrackDB failed! Status Code {r.status_code}")
+                logger.error(r.text[0:1000])
+                continue
 
             if r.encoding is None:
                 r.encoding = 'utf-8'
@@ -74,14 +84,19 @@ def update_from_trackdb():
             count = 0
             with shared_lock:
                 for row in csv.reader(r.iter_lines(decode_unicode=True)):
-                    known_files[row[0]] = 'hdfs:%s' % row[1]
-                    count += 1
-            logger.info("Updated %i files from TrackDB." % count)
+                    if row[0] != 'file_name_s':
+                        known_files[row[0]] = {
+                            'type': 'hdfs',
+                            'file_path': row[1], 
+                            'access_url': row[2]
+                        }
+                        count += 1
+            logger.debug("Updated %i files from TrackDB." % count)
 
         except Exception as e:
-            logger.error("Exception when talking to TrackDB: %s" % e)
+            logger.exception("Exception when talking to TrackDB!",e)
             if r:
-                logger.error("Response from Solr was: %s" % r.text)
+                logger.error("Response from Solr was: %s" % r.text[0:1000])
         
         # Sleep a long time before updating:
         time.sleep(5*60)

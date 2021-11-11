@@ -1,11 +1,14 @@
 import os
 import re
+from urllib.parse import urlparse, parse_qsl
+import logging
 import requests
 from flask import Response, request, stream_with_context, send_file
 from warcserver.file_finder import known_files
 
 WEBHDFS_PREFIX = os.environ.get('WEBHDFS_PREFIX', 'http://hdfs.api.wa.bl.uk/webhdfs/v1')
 
+logger = logging.getLogger(__name__)
 
 def get_byte_range():
     """
@@ -97,15 +100,29 @@ def find_file(filename):
     return None
 
 
-def from_webhdfs(path, offset, length):
-    url = WEBHDFS_PREFIX + path
-    params={
-        'offset': offset,
-        'user.name': 'access',
-        'op': 'OPEN'
+def from_webhdfs(item, offset, length):
+    logger.debug(f"Looking for {item}")
+    if 'access_url' in item and item['access_url']:
+        # Extract the parameters from the URL into an array:
+        parsed_url = urlparse(item['access_url'])
+        params = dict(parse_qsl(parsed_url.query))
+        # Reconstruct the URL without the parameters:
+        parsed_url = parsed_url._replace(params=None)
+        url = parsed_url.geturl()
+    else:
+        url = WEBHDFS_PREFIX + item['file_path']
+        params = {
+            'user.name': 'access',
+            'op': 'OPEN'
         }
+
+    # Add range parameters:
+    params['offset'] = offset
     if length:
         params['length'] = length
+
+    # And run the request
+    logger.debug(f"Requesting URL {url} with parameters {params}...")
     req = requests.get(url, params=params, stream=True)
     return Response(stream_with_context(req.iter_content(chunk_size=1024)), content_type=req.headers['content-type'])
 
