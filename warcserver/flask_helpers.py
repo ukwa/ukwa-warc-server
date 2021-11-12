@@ -103,13 +103,15 @@ def find_file(filename):
 def from_webhdfs(item, offset, length):
     logger.debug(f"Looking for {item}")
     if 'access_url' in item and item['access_url']:
+        logger.debug("Found access_url in item record.")
         # Extract the parameters from the URL into an array:
         parsed_url = urlparse(item['access_url'])
         params = dict(parse_qsl(parsed_url.query))
         # Reconstruct the URL without the parameters:
-        parsed_url = parsed_url._replace(params=None)
+        parsed_url = parsed_url._replace(query='')
         url = parsed_url.geturl()
     else:
+        logger.debug("No access_url found - using default WebHDFS service.")
         url = WEBHDFS_PREFIX + item['file_path']
         params = {
             'user.name': 'access',

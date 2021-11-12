@@ -8,11 +8,12 @@ services:
       args:
         http_proxy: ${HTTP_PROXY}
         https_proxy: ${HTTPS_PROXY}
+    command: "gunicorn --log-level debug --error-logfile - --access-logfile - --bind 0.0.0.0:8000 --workers 5 --worker-class gthread --threads 20 warc_server:app"
     environment:
       - "FLASK_ENV=development" # DEBUG mode for development
       - "WEBHDFS_PREFIX=http://hdfs.api.wa.bl.uk/webhdfs/v1"
       - "TRACKDB_URL=http://trackdb.dapi.wa.bl.uk/solr/tracking"
-      - "TRACKDB_FETCH_LIMIT=100"
+      - "TRACKDB_FETCH_LIMIT=100000"
       - "WARC_PATHS=/test_warcs"
     volumes:
       - "./test_warcs:/test_warcs"
