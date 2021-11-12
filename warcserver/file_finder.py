@@ -50,7 +50,7 @@ def update_from_filesystem():
                         known_files.pop(filename_open, None)
             logger.debug("Scanning filesystem found %i files." % count)
         except Exception as e:
-            logger.error("Exception when scanning for file(s): %s" % e)
+            logger.exception("Exception when scanning for file(s):", e)
         # Sleep briefly before updating
         time.sleep(5)
 #
@@ -74,9 +74,7 @@ def update_from_trackdb():
             r = requests.get(url, params=params, stream=True)
 
             if r.status_code != 200:
-                logger.error(f"Call to TrackDB failed! Status Code {r.status_code}")
-                logger.error(r.text[0:1000])
-                continue
+                raise Exception(f"Call to TrackDB failed! Status Code {r.status_code}:\n{r.text[0:1000]}")
 
             if r.encoding is None:
                 r.encoding = 'utf-8'
