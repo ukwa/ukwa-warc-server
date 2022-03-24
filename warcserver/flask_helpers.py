@@ -82,7 +82,7 @@ def send_file_partial(path, offset, length, is_range):
     else:
         rv.headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(offset, offset + length - 1, size))
 
-    logger.info(f"Returning response from send_file_partial: {rv}")
+    logger.debug(f"Returning response from send_file_partial: {rv}")
 
     return rv
 
@@ -140,7 +140,7 @@ def from_webhdfs(item, offset, length, is_range):
             # This response is not strictly valid, but we don't currently have access to the length of the original:
             response.headers.add('Content-Range', 'bytes {0}-*/*'.format(offset))
 
-    logger.info(f"Returning response from from_webhdfs: {response}")
+    logger.debug(f"Returning response from from_webhdfs: {response}")
 
     return response
 
