@@ -36,12 +36,7 @@ def hello_world():
 @app.route('/by-filename/<path:warc_filename>')
 def warc_by_filename(warc_filename):
     # Work out the range:
-    offset, length = get_byte_range()
-    if offset == None:
-        is_range = False
-        offset = 0
-    else:
-        is_range = True
+    offset, length, is_range = get_byte_range()
     app.logger.debug(f"Looking for range {is_range} ({offset}-{length}) of {warc_filename}...")
     # Look up the file:
     path_to_file = find_file(warc_filename)

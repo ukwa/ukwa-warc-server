@@ -14,12 +14,13 @@ def get_byte_range():
     """
     Determines the byte range for this request, either via parameters or HTTP Range requests.
 
-    :return: the (offset, length) tuple, using None if unspecified
+    :return: the (offset, length, is_range) tuple, using None if unspecified
     """
 
     # Default:
-    offset = None
+    offset = 0
     length = None
+    is_range = False
 
     # Get any range header:
     range_header = request.headers.get('Range', None)
@@ -33,6 +34,7 @@ def get_byte_range():
 
     # Otherwise, check for Range header:
     elif range_header:
+        is_range = True
         m = re.search('(\d+)-(\d*)', range_header)
         g = m.groups()
         if g[0]: offset = int(g[0])
@@ -45,7 +47,7 @@ def get_byte_range():
         if offset2 is not None:
             length = offset2 + 1 - offset
 
-    return offset, length
+    return offset, length, is_range
 
 
 def send_file_partial(path, offset, length, is_range):
