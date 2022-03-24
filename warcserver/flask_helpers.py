@@ -132,7 +132,11 @@ def from_webhdfs(item, offset, length, is_range):
         response.headers.add('Accept-Ranges', 'bytes')
     else:
         # As above, should the app only do this on HTTP requests, not WebHDFS ones?
-        response.headers.add('Content-Range', 'bytes {0}-{1}/*'.format(offset, offset + length - 1))
+        if length:
+            response.headers.add('Content-Range', 'bytes {0}-{1}/*'.format(offset, offset + length - 1))
+        else:
+            # This response is not strictly valid, but we don't currently have access to the length of the original:
+            response.headers.add('Content-Range', 'bytes {0}-*/*'.format(offset))
 
     logger.info(f"Returning response from from_webhdfs: {response}")
 
