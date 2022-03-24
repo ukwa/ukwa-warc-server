@@ -48,16 +48,11 @@ def get_byte_range():
     return offset, length
 
 
-def send_file_partial(path, offset, length):
+def send_file_partial(path, offset, length, is_range):
     """
         Simple wrapper around send_file which handles HTTP 206 Partial Content
         (byte ranges)
     """
-
-    if offset is None:
-        response = send_file(path)
-        response.headers.add('Accept-Ranges', 'bytes')
-        return response
 
     def generate():
         with open(path, "rb") as f:
@@ -78,8 +73,14 @@ def send_file_partial(path, offset, length):
                   200, # Should be 206 when appropriate!
                   mimetype="application/octet-stream",
                   direct_passthrough=True)
-    #Do this only when it's a proper range request? Not a WebHDFS mapped request?
-    #rv.headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(offset, offset + length - 1, size))
+
+    # Add range headers:
+    if not is_range:
+        rv.headers.add('Accept-Ranges', 'bytes')
+    else:
+        rv.headers.add('Content-Range', 'bytes {0}-{1}/{2}'.format(offset, offset + length - 1, size))
+
+    logger.info(f"Returning response from send_file_partial: {rv}")
 
     return rv
 
@@ -100,7 +101,7 @@ def find_file(filename):
     return None
 
 
-def from_webhdfs(item, offset, length):
+def from_webhdfs(item, offset, length, is_range):
     logger.debug(f"Looking for {item}")
     if 'access_url' in item and item['access_url']:
         logger.debug("Found access_url in item record.")
@@ -126,7 +127,16 @@ def from_webhdfs(item, offset, length):
     # And run the request
     logger.debug(f"Requesting URL {url} with parameters {params}...")
     req = requests.get(url, params=params, stream=True)
-    return Response(stream_with_context(req.iter_content(chunk_size=1024)), content_type=req.headers['content-type'])
+    response = Response(stream_with_context(req.iter_content(chunk_size=1024)), content_type=req.headers['content-type'])
+    if not is_range:
+        response.headers.add('Accept-Ranges', 'bytes')
+    else:
+        # As above, should the app only do this on HTTP requests, not WebHDFS ones?
+        response.headers.add('Content-Range', 'bytes {0}-{1}/*'.format(offset, offset + length - 1))
+
+    logger.info(f"Returning response from from_webhdfs: {response}")
+
+    return response
 
 
 #    # Grab the payload from the WARC and return it.
