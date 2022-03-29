@@ -10,16 +10,6 @@ on:
 env:
   TEST_TAG: ukwa/warc-server:test
 
-name: Container Image CI
-on: [push]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build the Container image
-        run: docker build . --file Dockerfile --tag localbuild/testimage:latest
-
 jobs:
   push_to_docker_hub:
     name: Push Docker image to Docker Hub
